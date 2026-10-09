@@ -1,0 +1,15 @@
+{
+  "name": "SWC Measurement Book – LBS",
+  "short_name": "SWC MB",
+  "description": "Stage-wise measurement of Loose Boulder Structures: site visit, foundation, post-construction.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F3F5F2",
+  "theme_color": "#0F6E6A",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E6A">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>SWC Measurement Book – LBS</title>
+<style>
+:root{
+  --ink:#1D2B27; --muted:#5C6B66; --paper:#F3F5F2; --card:#FFFFFF; --line:#D3DCD7;
+  --water:#0F6E6A; --water-2:#E2F0EE; --soil:#7A5737; --soil-2:#F3ECE4;
+  --staff:#C8961E; --staff-2:#FBF3DE; --warn:#A6461F; --warn-2:#FBEAE2; --ok:#2E7D4F;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;background:var(--paper);color:var(--ink)}
+body{font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;font-variant-numeric:tabular-nums}
+button,input,textarea,select{font:inherit;color:inherit}
+header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--water);color:#fff;
+  display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem}
+header.bar h1{font-size:1.05rem;margin:0;flex:1;font-weight:650;letter-spacing:.01em}
+.net{font-size:.78rem;padding:.15rem .55rem;border-radius:99px;background:rgba(255,255,255,.18)}
+.net.off{background:var(--staff);color:#2a2000}
+.iconbtn{background:none;border:0;color:#fff;font-size:1.25rem;padding:.3rem .5rem;cursor:pointer;border-radius:6px}
+main{max-width:760px;margin:0 auto;padding:1rem}
+h2{font-size:1.25rem;margin:.2rem 0 .8rem}
+h3{font-size:1rem;margin:1.2rem 0 .5rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;min-height:44px;padding:.55rem 1rem;
+  border-radius:8px;border:1.5px solid var(--water);background:var(--water);color:#fff;font-weight:600;cursor:pointer}
+.btn.ghost{background:#fff;color:var(--water)}
+.btn.soil{background:var(--soil);border-color:var(--soil)}
+.btn.danger{background:#fff;color:var(--warn);border-color:var(--warn)}
+.btn.small{min-height:36px;padding:.3rem .7rem;font-size:.9rem}
+.btn:disabled{opacity:.5}
+:focus-visible{outline:3px solid var(--staff);outline-offset:2px}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+.grow{flex:1}
+
+/* record list */
+.rec{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--water);
+  border-radius:6px;padding:.75rem .9rem;margin:.5rem 0;cursor:pointer}
+.rec b{font-size:1.05rem}
+.rec small{color:var(--muted)}
+.stages{display:flex;gap:.3rem;margin-top:.4rem}
+.pip{font-size:.75rem;padding:.1rem .45rem;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
+.pip.done{background:var(--water-2);border-color:var(--water);color:var(--water)}
+.pip.sync{background:var(--water);border-color:var(--water);color:#fff}
+.empty{border:2px dashed var(--line);border-radius:8px;padding:2rem 1rem;text-align:center;color:var(--muted)}
+
+/* stage tabs: a real sequence, so numbered */
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:.4rem 0 1rem}
+.tab{background:#fff;border:1px solid var(--line);border-radius:6px;padding:.45rem .2rem;font-size:.82rem;cursor:pointer;line-height:1.2}
+.tab span{display:block;font-size:1.05rem;font-weight:700}
+.tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* form */
+fieldset{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:.8rem .9rem 1rem;margin:0 0 1rem}
+legend{font-weight:650;padding:0 .3rem}
+label{display:block;font-size:.88rem;color:var(--muted);margin:.55rem 0 .2rem}
+input[type=text],input[type=number],input[type=date],input[type=url],input[type=password],textarea{
+  width:100%;min-height:44px;padding:.5rem .6rem;border:1.5px solid var(--line);border-radius:6px;background:#fff}
+input:focus,textarea:focus{border-color:var(--water);outline:none}
+textarea{min-height:70px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:0 .7rem}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:0 .5rem}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:0 .5rem}
+.hint{font-size:.82rem;color:var(--muted);margin:.35rem 0 0}
+
+/* station table */
+.stwrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
+table.st{border-collapse:collapse;width:100%;min-width:420px}
+table.st th,table.st td{border-bottom:1px solid var(--line);padding:.25rem .3rem;text-align:center}
+table.st th{background:var(--paper);font-size:.8rem;font-weight:600}
+table.st td:first-child{font-weight:650;width:70px}
+table.st input{min-height:38px;text-align:center;padding:.3rem}
+
+/* the measurement-book ledger: the one distinctive element */
+.ledger{background:var(--staff-2);border:1px solid #E7D29A;border-left:5px solid var(--staff);border-radius:6px;padding:.4rem .8rem;margin:.8rem 0}
+.ledger .ln{display:flex;justify-content:space-between;gap:.8rem;padding:.4rem 0;border-bottom:1px dashed #E2CB8A}
+.ledger .ln:last-child{border-bottom:0}
+.ledger .f{font-size:.82rem;color:#6B5413}
+.ledger .v{font-weight:700;white-space:nowrap}
+.ledger .ln.total{border-top:2px solid var(--staff);border-bottom:0;margin-top:.2rem}
+.ledger .ln.total .v{font-size:1.2rem}
+
+.warn{background:var(--warn-2);color:var(--warn);border-radius:6px;padding:.5rem .7rem;font-size:.88rem;margin:.4rem 0}
+
+/* photos */
+.photos{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.ph{border:1.5px dashed var(--line);border-radius:6px;background:#fff;padding:.4rem;text-align:center;font-size:.8rem}
+.ph img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:4px;display:block;background:var(--paper)}
+.ph .ref{opacity:.55;margin-bottom:.3rem}
+.ph .slot{aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;background:var(--paper);border-radius:4px;color:var(--muted)}
+.ph label{margin:.3rem 0 0;color:var(--water);font-weight:600;cursor:pointer}
+.ph input{display:none}
+
+.toast{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  background:var(--ink);color:#fff;padding:.6rem 1rem;border-radius:8px;font-size:.9rem;z-index:20;max-width:90vw}
+.sumtable{width:100%;border-collapse:collapse;background:#fff;font-size:.92rem}
+.sumtable td{border-bottom:1px solid var(--line);padding:.4rem .5rem}
+.sumtable td:last-child{text-align:right;font-weight:600}
+@media (max-width:420px){ .g4{grid-template-columns:1fr 1fr} .tab{font-size:.74rem} }
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="bar">
+  <button class="iconbtn" id="backBtn" aria-label="Back" hidden>&#8592;</button>
+  <h1 id="title">SWC Measurement Book</h1>
+  <span class="net" id="net">Online</span>
+  <button class="iconbtn" id="dashBtn" aria-label="Dashboard" title="Dashboard">&#9638;</button>
+  <button class="iconbtn" id="syncBtn" aria-label="Sync now" title="Sync now">&#8635;</button>
+  <button class="iconbtn" id="setBtn" aria-label="Settings" title="Settings">&#9881;</button>
+</header>
+<main id="app"></main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+'use strict';
+/* =========================================================
+   Storage (IndexedDB) – all records live on the phone first
+   ========================================================= */
+const DB_NAME = 'swc-mb', STORE = 'records';
+let dbp;
+function db(){
+  if (!dbp) dbp = new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(STORE, { keyPath: 'uid' });
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+  return dbp;
+}
+async function tx(mode, fn){
+  const d = await db();
+  return new Promise((res, rej) => {
+    const t = d.transaction(STORE, mode), s = t.objectStore(STORE);
+    const out = fn(s);
+    t.oncomplete = () => res(out && out.result !== undefined ? out.result : out);
+    t.onerror = () => rej(t.error);
+  });
+}
+const dbAll = () => tx('readonly', s => s.getAll());
+const dbPut = rec => tx('readwrite', s => s.put(rec));
+const dbDel = uid => tx('readwrite', s => s.delete(uid));
+
+/* =========================================================
+   Settings (localStorage)
+   ========================================================= */
+const settings = Object.assign({ url:'', token:'', surveyor:'', autoSync:true },
+  JSON.parse(localStorage.getItem('swc-settings') || '{}'));
+const saveSettings = () => localStorage.setItem('swc-settings', JSON.stringify(settings));
+
+/* =========================================================
+   Data model
+   ========================================================= */
+const PHOTO_ANGLES = ['Upstream view', 'Downstream view', 'Side view (across nala)'];
+const STAGE_NAMES = { s1:'Site visit', s2:'Foundation', s3:'Post-construction' };
+
+function newRecord(){
+  const uid = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+  return {
+    uid, type:'LBS', created: new Date().toISOString(), updated: new Date().toISOString(),
+    s1:{ date: today(), lbsId:'', siteName:'', village:'', lat:'', lng:'', acc:'', owner:'', gatNo:'',
+         nalaWidth:'', slope:'', bwLength:'', bww:['','','',''], remarks:'', photos:['','',''] },
+    s2:{ date:'', fLength:'', fw:['','',''], fd:['','',''], remarks:'', photos:['','',''] },
+    s3:{ date:'', L1:'', tw:['','',''], st:[], bw:[], uh:[], dh:[], remarks:'', photos:['','',''] },
+    sync:{ s1:'', s2:'', s3:'' },            // '' = nothing to send, 'pending', 'synced'
+    links:{ folder:'' }
+  };
+}
+const today = () => new Date().toISOString().slice(0,10);
+
+/* =========================================================
+   Calculations – kept identical to Code.gs (server recalculates)
+   ========================================================= */
+const num = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
+const avg = arr => { const v = (arr||[]).map(num).filter(x => x !== null); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
+const mul = (...a) => a.some(x => x == null) ? null : a.reduce((p,c)=>p*c,1);
+const half = (a,b) => (a == null || b == null) ? null : (a+b)/2;
+const filled = arr => (arr||[]).filter(v => num(v) !== null).length;
+
+// Stations every 1 m from 0 to structure length, capped at 20 m; adds the end point if length is fractional.
+function stations(L){
+  L = num(L); if (!L || L <= 0) return [];
+  const m = Math.min(L, 20), s = [];
+  for (let i = 0; i <= Math.floor(m + 1e-9); i++) s.push(i);
+  if (m - Math.floor(m) > 0.009) s.push(+m.toFixed(2));
+  return s;
+}
+
+function calc(r){
+  const c = {};
+  c.bwwAvg = avg(r.s1.bww);
+  c.bwArea = mul(num(r.s1.bwLength), c.bwwAvg);
+  c.afw = avg(r.s2.fw); c.afd = avg(r.s2.fd);
+  c.vFound = mul(num(r.s2.fLength), c.afw, c.afd);
+  c.atw = avg(r.s3.tw); c.abw = avg(r.s3.bw);
+  c.auh = avg(r.s3.uh); c.adh = avg(r.s3.dh);
+  c.aw = half(c.abw, c.atw); c.ah = half(c.auh, c.adh);
+  c.vAbove = mul(num(r.s3.L1), c.aw, c.ah);
+  c.vBelow = c.vFound;
+  c.vTotal = (c.vAbove == null || c.vBelow == null) ? null : c.vAbove + c.vBelow;
+  return c;
+}
+const f3 = v => v == null ? '—' : v.toFixed(3);
+const f2 = v => v == null ? '—' : v.toFixed(2);
+
+function stageDone(r, s){
+  const x = r[s];
+  if (s === 's1') return !!(x.lbsId && num(x.lat)!==null && num(x.lng)!==null && num(x.nalaWidth)!==null &&
+                         num(x.slope)!==null && num(x.bwLength)!==null && filled(x.bww)===4);
+  if (s === 's2') return num(x.fLength)!==null && filled(x.fw)===3 && filled(x.fd)===3;
+  if (s === 's3') return num(x.L1)!==null && filled(x.tw)===3 && x.st.length>0 &&
+                         filled(x.bw)===x.st.length && filled(x.uh)===x.st.length && filled(x.dh)===x.st.length;
+}
+
+function warnings(r, c, stage){
+  const w = [];
+  if (stage === 's1'){
+    if (num(r.s1.slope) > 15) w.push('Nala slope above 15% is steep for an LBS. Check the reading or consider a series of smaller structures.');
+    if (r.s1.acc && num(r.s1.acc) > 30) w.push('GPS accuracy is poorer than 30 m. Wait in the open and capture again.');
+  }
+  if (stage === 's2'){
+    const L1 = num(r.s3.L1), FL = num(r.s2.fLength), NW = num(r.s1.nalaWidth);
+    if (FL && NW && FL < NW) w.push('Foundation length is shorter than the nala width recorded at site visit. The structure should key into both banks.');
+    if (c.afd != null && c.afd > 1.5) w.push('Average foundation depth is above 1.5 m. Confirm the readings.');
+    if (FL && L1 && Math.abs(FL - L1)/L1 > 0.15) w.push('Foundation length and structure length (L1) differ by more than 15%.');
+  }
+  if (stage === 's3'){
+    if (c.atw != null && c.abw != null && c.atw > c.abw) w.push('Average top width is greater than average bottom width. An LBS section should taper upwards; check the readings.');
+    if (num(r.s3.L1) > 20) w.push('Structure is longer than 20 m. Width and height stations are recorded only up to 20 m, but the full L1 is used for volume.');
+    if (c.vBelow == null) w.push('Stage 2 foundation is incomplete, so the volume below nala bed level cannot be calculated yet.');
+  }
+  return w;
+}
+
+/* =========================================================
+   Helpers
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+function toast(msg, ms=2600){ const t=$('#toast'); t.textContent=msg; t.hidden=false; clearTimeout(t._h); t._h=setTimeout(()=>t.hidden=true, ms); }
+function getPath(o, p){ return p.split('.').reduce((a,k)=>a==null?a:a[k], o); }
+function setPath(o, p, v){ const k=p.split('.'); const last=k.pop(); const t=k.reduce((a,x)=>a[x], o); t[last]=v; }
+
+let records = [];
+let cur = null;          // current record
+let curStage = 's1';
+let view = 'list';
+let saveTimer;
+
+function markDirty(stage){
+  cur.updated = new Date().toISOString();
+  if (stage) cur.sync[stage] = 'pending';
+  if (stage && !cur[stage].date){ cur[stage].date = today(); const di = document.getElementById(stage + '.date'); if (di) di.value = cur[stage].date; }
+  if (stage === 's2' && cur.sync.s3) cur.sync.s3 = 'pending'; // below-NBL volume depends on stage 2
+  const rec = cur;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => dbPut(rec), 400);
+}
+
+/* =========================================================
+   Views
+   ========================================================= */
+async function showList(){
+  view = 'list'; cur = null;
+  records = (await dbAll()).sort((a,b) => b.updated.localeCompare(a.updated));
+  $('#title').textContent = 'SWC Measurement Book'; $('#backBtn').hidden = true;
+  const pending = records.filter(r => Object.values(r.sync).includes('pending')).length;
+  $('#app').innerHTML = `
+    <div class="row" style="margin-bottom:.6rem">
+      <h2 class="grow" style="margin:0">Loose boulder structures</h2>
+      <button class="btn" id="newBtn">+ New LBS</button>
+    </div>
+    <p class="hint">${records.length} structure${records.length===1?'':'s'} on this phone${pending?` · ${pending} waiting to sync`:''}</p>
+    ${records.length ? records.map(r => {
+      const c = calc(r);
+      const pip = s => `<span class="pip ${r.sync[s]==='synced'?'sync':stageDone(r,s)?'done':''}">${s[1]} ${STAGE_NAMES[s]}</span>`;
+      return `<button class="rec" data-uid="${r.uid}">
+        <b>${esc(r.s1.lbsId || 'Untitled LBS')}</b> <small>${esc(r.s1.siteName)} ${r.s1.village?'· '+esc(r.s1.village):''}</small><br>
+        <small>${esc(r.s1.owner)} ${r.s1.gatNo?'· Gat '+esc(r.s1.gatNo):''}${c.vTotal!=null?` · Total stone work ${f3(c.vTotal)} Cum`:''}</small>
+        <div class="stages">${pip('s1')}${pip('s2')}${pip('s3')}</div></button>`;
+    }).join('') : `<div class="empty">No structures recorded yet.<br>Tap <b>+ New LBS</b> at the first site visit.</div>`}
+    <div class="row" style="margin-top:1.2rem">
+      <button class="btn ghost small" id="dashBtn2">Dashboard</button>
+      <button class="btn ghost small" id="csvBtn">Export CSV</button>
+      <button class="btn ghost small" id="bakBtn">Backup (JSON)</button>
+      <label class="btn ghost small" style="margin:0">Restore backup<input type="file" id="restore" accept="application/json" hidden></label>
+    </div>`;
+  $('#newBtn').onclick = async () => { const r = newRecord(); await dbPut(r); openRecord(r, 's1'); };
+  document.querySelectorAll('.rec').forEach(b => b.onclick = () => openRecord(records.find(r => r.uid === b.dataset.uid)));
+  $('#dashBtn2').onclick = showDashboard; $('#csvBtn').onclick = exportCSV; $('#bakBtn').onclick = exportJSON; $('#restore').onchange = importJSON;
+}
+
+function openRecord(r, stage){
+  cur = r; view = 'rec';
+  curStage = stage || (r.sync.s3||stageDone(r,'s2') ? 's3' : stageDone(r,'s1') ? 's2' : 's1');
+  $('#backBtn').hidden = false;
+  renderRecord();
+}
+
+function renderRecord(){
+  $('#title').textContent = cur.s1.lbsId || 'New LBS';
+  const tabs = [['s1','Site visit'],['s2','Foundation'],['s3','Post-constr.'],['sum','Summary']];
+  $('#app').innerHTML = `
+    <nav class="tabs">${tabs.map(([k,t],i)=>`<button class="tab ${curStage===k?'on':''}" data-tab="${k}"><span>${i+1}</span>${t}</button>`).join('')}</nav>
+    <div id="stage">${({s1:viewS1,s2:viewS2,s3:viewS3,sum:viewSum})[curStage]()}</div>`;
+  document.querySelectorAll('.tab').forEach(b => b.onclick = () => { curStage = b.dataset.tab; renderRecord(); window.scrollTo(0,0); });
+  bindStage();
+}
+
+const inp = (path, label, opts={}) => {
+  const v = getPath(cur, path) ?? '';
+  const type = opts.type || 'number';
+  const extra = type==='number' ? `inputmode="decimal" step="any" min="0"` : '';
+  return `<div><label for="${path}">${label}</label><input id="${path}" type="${type}" ${extra} data-path="${path}" value="${esc(v)}" ${opts.ph?`placeholder="${opts.ph}"`:''}></div>`;
+};
+
+function photoBlock(stage){
+  const p = cur[stage].photos;
+  return `<fieldset><legend>Photos – same 3 angles at every stage</legend>
+    <div class="photos">${PHOTO_ANGLES.map((a,i)=>`
+      <div class="ph">
+        ${stage!=='s1' && cur.s1.photos[i] ? `<img class="ref" src="${cur.s1.photos[i]}" alt="Stage 1 reference, ${a}">` : ''}
+        ${p[i] ? `<img src="${p[i]}" alt="${a}">` : `<div class="slot">No photo</div>`}
+        <div>${i+1}. ${a}</div>
+        <label>${p[i]?'Retake':'Add photo'}<input type="file" accept="image/*" data-photo="${stage}.${i}"></label>
+      </div>`).join('')}</div>
+    ${stage!=='s1'?'<p class="hint">The faded image above each slot is the Stage 1 photo. Stand at the same spot and frame it the same way.</p>':''}
+  </fieldset>`;
+}
+
+const ledger = lines => `<div class="ledger">${lines.map(([lab, formula, out, total]) =>
+  `<div class="ln ${total?'total':''}"><div><div>${lab}</div><div class="f">${formula}</div></div><div class="v" data-out="${out}"></div></div>`).join('')}</div>`;
+
+function viewS1(){
+  return `
+  <fieldset><legend>Site identification</legend>
+    <div class="g2">${inp('s1.lbsId','LBS ID',{type:'text',ph:'e.g. LBS-MOH-014'})}${inp('s1.date','Visit date',{type:'date'})}</div>
+    <div class="g2">${inp('s1.siteName','Site name',{type:'text'})}${inp('s1.village','Village',{type:'text'})}</div>
+  </fieldset>
+  <fieldset><legend>Location</legend>
+    <div class="g2">${inp('s1.lat','Latitude',{ph:'20.123456'})}${inp('s1.lng','Longitude',{ph:'76.123456'})}</div>
+    <div class="row" style="margin-top:.6rem"><button class="btn ghost" id="gpsBtn">Capture GPS</button>
+      <span class="hint" id="gpsInfo">${cur.s1.acc?`Accuracy ±${esc(cur.s1.acc)} m`:'GPS works without mobile data. Stand in the open.'}</span></div>
+  </fieldset>
+  <fieldset><legend>Landowner</legend>
+    <div class="g2">${inp('s1.owner','Landowner name',{type:'text'})}${inp('s1.gatNo','Gat No.',{type:'text'})}</div>
+  </fieldset>
+  <fieldset><legend>Nala at selected location</legend>
+    <div class="g2">${inp('s1.nalaWidth','Nala width (m)')}${inp('s1.slope','Nala bed slope (%)')}</div>
+    ${inp('s1.bwLength','Backwater storage length (m)')}
+    <h3>Backwater width, upstream of the structure line</h3>
+    <div class="g4">${[5,10,15,20].map((d,i)=>inp(`s1.bww.${i}`,`BWW${i+1} at ${d} m`)).join('')}</div>
+    ${ledger([
+      ['Average backwater width', '(BWW1 + BWW2 + BWW3 + BWW4) ÷ 4', 'bwwAvg'],
+      ['Backwater spread area (indicative)', 'Backwater length × average width', 'bwArea']
+    ])}
+    <div id="warns"></div>
+    <label for="s1.remarks">Remarks</label><textarea id="s1.remarks" data-path="s1.remarks">${esc(cur.s1.remarks)}</textarea>
+  </fieldset>
+  ${photoBlock('s1')}`;
+}
+
+function viewS2(){
+  return `
+  <fieldset><legend>Foundation excavation</legend>
+    <div class="g2">${inp('s2.date','Measurement date',{type:'date'})}${inp('s2.fLength','Foundation length across nala (m)')}</div>
+    <h3>Foundation width (m)</h3>
+    <div class="g3">${inp('s2.fw.0','FW1 right')}${inp('s2.fw.1','FW2 centre')}${inp('s2.fw.2','FW3 left')}</div>
+    <h3>Foundation depth below nala bed (m)</h3>
+    <div class="g3">${inp('s2.fd.0','FD1 right')}${inp('s2.fd.1','FD2 centre')}${inp('s2.fd.2','FD3 left')}</div>
+    ${ledger([
+      ['Average foundation width (AFW)', '(FW1 + FW2 + FW3) ÷ 3', 'afw'],
+      ['Average foundation depth (AFD)', '(FD1 + FD2 + FD3) ÷ 3', 'afd'],
+      ['Foundation excavation volume', 'Foundation length × AFW × AFD', 'vFound', true]
+    ])}
+    <div id="warns"></div>
+    <label for="s2.remarks">Remarks (strata met, hard rock depth, dewatering)</label><textarea id="s2.remarks" data-path="s2.remarks">${esc(cur.s2.remarks)}</textarea>
+  </fieldset>
+  ${photoBlock('s2')}`;
+}
+
+function stationRows(){
+  const s = cur.s3.st;
+  if (!s.length) return `<p class="hint">Enter the structure length L1 to create measurement stations at every 1 m.</p>`;
+  return `<div class="stwrap"><table class="st"><thead><tr><th>Station (m)</th><th>Bottom width BW</th><th>Upstream height UH</th><th>Downstream height DH</th></tr></thead><tbody>
+    ${s.map((d,i)=>`<tr><td>${d}</td>${['bw','uh','dh'].map(k=>`<td><input type="number" inputmode="decimal" step="any" min="0" data-path="s3.${k}.${i}" aria-label="${k.toUpperCase()} at ${d} m" value="${esc(cur.s3[k][i] ?? '')}"></td>`).join('')}</tr>`).join('')}
+  </tbody></table></div>
+  <p class="hint">${s.length} stations from 0 m to ${s[s.length-1]} m. Heights are measured from nala bed level.</p>`;
+}
+
+function viewS3(){
+  return `
+  <fieldset><legend>Structure length and top width</legend>
+    <div class="g2">${inp('s3.date','Measurement date',{type:'date'})}${inp('s3.L1','Structure length across nala, L1 (m)')}</div>
+    <h3>Top width (m)</h3>
+    <div class="g3">${inp('s3.tw.0','TW1 right')}${inp('s3.tw.1','TW2 centre')}${inp('s3.tw.2','TW3 left')}</div>
+  </fieldset>
+  <fieldset><legend>Station readings at every 1 m (max 20 m)</legend>
+    <div id="stations">${stationRows()}</div>
+  </fieldset>
+  <fieldset><legend>Stone work volume</legend>
+    ${ledger([
+      ['Average top width (ATW)', '(TW1 + TW2 + TW3) ÷ 3', 'atw'],
+      ['Average bottom width (ABW)', 'Mean of BW at all stations', 'abw'],
+      ['Average width (AW)', '(ABW + ATW) ÷ 2', 'aw'],
+      ['Average upstream height (AUH)', 'Mean of UH at all stations', 'auh'],
+      ['Average downstream height (ADH)', 'Mean of DH at all stations', 'adh'],
+      ['Average height (AH)', '(AUH + ADH) ÷ 2', 'ah'],
+      ['Stone work above nala bed (ANBL)', 'L1 × AW × AH', 'vAbove'],
+      ['Stone work below nala bed (BNBL)', 'Foundation length × AFD × AFW (Stage 2)', 'vBelow'],
+      ['Total stone work', 'ANBL + BNBL', 'vTotal', true]
+    ])}
+    <div id="warns"></div>
+    <label for="s3.remarks">Remarks</label><textarea id="s3.remarks" data-path="s3.remarks">${esc(cur.s3.remarks)}</textarea>
+  </fieldset>
+  ${photoBlock('s3')}`;
+}
+
+function viewSum(){
+  const c = calc(cur), s = cur.s1;
+  const st = k => cur.sync[k]==='synced' ? 'Synced' : stageDone(cur,k) ? (cur.sync[k]==='pending'?'Complete, not synced':'Complete') : 'Incomplete';
+  const rows = [
+    ['LBS ID', esc(s.lbsId)], ['Site / village', esc(s.siteName)+(s.village?' / '+esc(s.village):'')],
+    ['Landowner / Gat No.', esc(s.owner)+' / '+esc(s.gatNo)], ['Location', s.lat&&s.lng?`${esc(s.lat)}, ${esc(s.lng)}`:'—'],
+    ['Nala width / slope', `${esc(s.nalaWidth)||'—'} m / ${esc(s.slope)||'—'} %`],
+    ['Backwater length × avg width', `${esc(s.bwLength)||'—'} m × ${f2(c.bwwAvg)} m`],
+    ['Stage 1 – Site visit', st('s1')], ['Stage 2 – Foundation', st('s2')], ['Stage 3 – Post-construction', st('s3')],
+    ['Foundation excavation', `${f3(c.vFound)} Cum`], ['Stone work above NBL', `${f3(c.vAbove)} Cum`],
+    ['Stone work below NBL', `${f3(c.vBelow)} Cum`], ['Total stone work', `<b>${f3(c.vTotal)} Cum</b>`]
+  ];
+  return `<table class="sumtable">${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table>
+    ${cur.links.folder?`<p><a href="${esc(cur.links.folder)}" target="_blank" rel="noopener">Open photo folder in Google Drive</a></p>`:''}
+    <div class="row" style="margin-top:1rem">
+      <button class="btn" id="syncOne">Sync this structure</button>
+      <button class="btn danger" id="delBtn">Delete from phone</button>
+    </div>`;
+}
+
+/* =========================================================
+   Binding and live calculation
+   ========================================================= */
+function bindStage(){
+  const st = $('#stage');
+  st.oninput = e => {
+    const p = e.target.dataset.path; if (!p) return;
+    setPath(cur, p, e.target.value);
+    markDirty(p.split('.')[0]);
+    refreshOutputs();
+    if (p === 's1.lbsId') $('#title').textContent = e.target.value || 'New LBS';
+  };
+  st.onchange = async e => {
+    if (e.target.dataset.path === 's3.L1') rebuildStations();
+    if (e.target.dataset.photo) await takePhoto(e.target);
+  };
+  const g = $('#gpsBtn'); if (g) g.onclick = captureGPS;
+  const so = $('#syncOne'); if (so) so.onclick = () => syncAll([cur]);
+  const del = $('#delBtn'); if (del) del.onclick = async () => {
+    if (!confirm(`Delete ${cur.s1.lbsId||'this structure'} from this phone? Data already synced to Google Sheets stays there.`)) return;
+    await dbDel(cur.uid); toast('Deleted from phone'); showList();
+  };
+  refreshOutputs();
+}
+
+function refreshOutputs(){
+  const c = calc(cur);
+  document.querySelectorAll('[data-out]').forEach(el => {
+    const k = el.dataset.out, v = c[k];
+    const unit = /^v/.test(k) ? ' Cum' : k === 'bwArea' ? ' m²' : ' m';
+    el.textContent = v == null ? '—' : f3(v) + unit;
+  });
+  const w = $('#warns'); if (w) w.innerHTML = warnings(cur, c, curStage).map(x => `<div class="warn">${esc(x)}</div>`).join('');
+}
+
+function rebuildStations(){
+  const old = {}; cur.s3.st.forEach((d,i) => old[d] = { bw:cur.s3.bw[i], uh:cur.s3.uh[i], dh:cur.s3.dh[i] });
+  const ns = stations(cur.s3.L1);
+  cur.s3.st = ns;
+  ['bw','uh','dh'].forEach(k => cur.s3[k] = ns.map(d => old[d] ? (old[d][k] ?? '') : ''));
+  markDirty('s3');
+  $('#stations').innerHTML = stationRows();
+  refreshOutputs();
+}
+
+function captureGPS(){
+  if (!navigator.geolocation){ toast('This phone does not support GPS in the browser. Enter coordinates manually.'); return; }
+  const info = $('#gpsInfo'); info.textContent = 'Getting position…';
+  navigator.geolocation.getCurrentPosition(p => {
+    cur.s1.lat = p.coords.latitude.toFixed(6); cur.s1.lng = p.coords.longitude.toFixed(6);
+    cur.s1.acc = Math.round(p.coords.accuracy);
+    document.getElementById('s1.lat').value = cur.s1.lat; document.getElementById('s1.lng').value = cur.s1.lng;
+    info.textContent = `Accuracy ±${cur.s1.acc} m`; markDirty('s1'); refreshOutputs();
+  }, err => { info.textContent = 'Could not get GPS: ' + err.message + '. Turn on location or enter manually.'; },
+  { enableHighAccuracy:true, timeout:30000, maximumAge:0 });
+}
+
+/* Photos: resized to 1280 px and stamped with ID, stage, angle, date and GPS for audit */
+async function takePhoto(input){
+  const file = input.files[0]; if (!file) return;
+  const [stage, i] = input.dataset.photo.split('.');
+  toast('Processing photo…', 1500);
+  const url = URL.createObjectURL(file);
+  const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = url; });
+  const max = 1280, sc = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const w = Math.round(img.naturalWidth*sc), h = Math.round(img.naturalHeight*sc);
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const g = cv.getContext('2d'); g.drawImage(img, 0, 0, w, h);
+  const bh = Math.max(28, Math.round(h*0.05)); g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(0, h-bh, w, bh);
+  g.fillStyle = '#fff'; g.font = `${Math.round(bh*0.45)}px sans-serif`; g.textBaseline = 'middle';
+  const stamp = `${cur.s1.lbsId||'LBS'} | ${STAGE_NAMES[stage]} | ${PHOTO_ANGLES[i]} | ${new Date().toLocaleString('en-IN')} | ${cur.s1.lat||'-'}, ${cur.s1.lng||'-'}`;
+  g.fillText(stamp, Math.round(bh*0.3), h - bh/2, w - bh*0.6);
+  URL.revokeObjectURL(url);
+  cur[stage].photos[+i] = cv.toDataURL('image/jpeg', 0.72);
+  markDirty(stage); await dbPut(cur);
+  renderRecord();
+}
+
+/* =========================================================
+   Sync to Google Apps Script
+   ========================================================= */
+let syncing = false;
+async function post(payload){
+  const res = await fetch(settings.url, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(Object.assign({ token: settings.token, surveyor: settings.surveyor }, payload)) });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || 'Server rejected the data');
+  return j;
+}
+
+async function syncAll(list){
+  if (syncing) return;
+  if (!settings.url){ toast('Add your Apps Script web app URL in Settings first.'); return; }
+  if (!navigator.onLine){ toast('No network. Data is saved on the phone and will sync later.'); return; }
+  syncing = true; $('#syncBtn').disabled = true;
+  list = list || (await dbAll()).filter(r => Object.values(r.sync).includes('pending'));
+  let sent = 0, failed = 0, lastErr = '';
+  for (const r of list){
+    if (!r.s1.lbsId){ continue; }
+    for (const s of ['s1','s2','s3']){
+      if (r.sync[s] !== 'pending') continue;
+      try{
+        const j = await post({ action:'saveStage', stage:s, uid:r.uid, lbsId:r.s1.lbsId,
+          s1: strip(r.s1, s!=='s1'), s2: s==='s1' ? null : strip(r.s2, s!=='s2'), s3: s==='s3' ? strip(r.s3,false) : null });
+        r.sync[s] = 'synced'; if (j.folder) r.links.folder = j.folder; sent++;
+        await dbPut(r);
+      }catch(e){ failed++; lastErr = e.message; }
+    }
+  }
+  syncing = false; $('#syncBtn').disabled = false;
+  toast(failed ? `Synced ${sent}, failed ${failed}: ${lastErr}` : sent ? `Synced ${sent} stage${sent>1?'s':''}` : 'Nothing waiting to sync', 4000);
+  if (view === 'list') showList(); else if (view === 'dash') showDashboard(); else if (cur) { cur = (await dbAll()).find(x => x.uid === cur.uid) || cur; renderRecord(); }
+}
+// send photos only for the stage being synced
+function strip(stageObj, dropPhotos){ const o = Object.assign({}, stageObj); if (dropPhotos) delete o.photos; return o; }
+
+/* =========================================================
+   Settings, export, backup
+   ========================================================= */
+function showSettings(){
+  view = 'settings'; $('#title').textContent = 'Settings'; $('#backBtn').hidden = false;
+  $('#app').innerHTML = `
+    <fieldset><legend>Google Sheets sync</legend>
+      <label for="u">Apps Script web app URL</label><input id="u" type="url" value="${esc(settings.url)}" placeholder="https://script.google.com/macros/s/…/exec">
+      <label for="t">Access token (from the setup log in Apps Script)</label><input id="t" type="password" value="${esc(settings.token)}">
+      <label for="sv">Your name (recorded as surveyor)</label><input id="sv" type="text" value="${esc(settings.surveyor)}">
+      <label style="display:flex;gap:.5rem;align-items:center;color:var(--ink)"><input id="as" type="checkbox" ${settings.autoSync?'checked':''} style="width:22px;height:22px"> Sync automatically when the network comes back</label>
+      <div class="row" style="margin-top:.8rem"><button class="btn" id="saveSet">Save settings</button><button class="btn ghost" id="testSet">Test connection</button></div>
+    </fieldset>
+    <p class="hint">Records and photos are stored on this phone until synced. Clearing browser data for this site deletes unsynced work, so sync or take a JSON backup regularly.</p>`;
+  const read = () => { settings.url=$('#u').value.trim(); settings.token=$('#t').value.trim(); settings.surveyor=$('#sv').value.trim(); settings.autoSync=$('#as').checked; saveSettings(); };
+  $('#saveSet').onclick = () => { read(); toast('Settings saved'); };
+  $('#testSet').onclick = async () => { read(); try{ const j = await post({action:'ping'}); toast('Connected to ' + (j.sheet || 'Google Sheet')); }catch(e){ toast('Connection failed: ' + e.message, 4500); } };
+}
+
+function download(name, text, type){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], {type})); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+async function exportCSV(){
+  const rs = await dbAll();
+  const head = ['LBS ID','Site','Village','Landowner','Gat No','Latitude','Longitude','Nala width (m)','Slope (%)','Backwater length (m)','Avg BWW (m)',
+    'Foundation length (m)','AFW (m)','AFD (m)','Excavation (Cum)','L1 (m)','ATW (m)','ABW (m)','AW (m)','AUH (m)','ADH (m)','AH (m)','Above NBL (Cum)','Below NBL (Cum)','Total stone work (Cum)'];
+  const q = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
+  const lines = rs.map(r => { const c = calc(r), s = r.s1; return [s.lbsId,s.siteName,s.village,s.owner,s.gatNo,s.lat,s.lng,s.nalaWidth,s.slope,s.bwLength,f3(c.bwwAvg),
+    r.s2.fLength,f3(c.afw),f3(c.afd),f3(c.vFound),r.s3.L1,f3(c.atw),f3(c.abw),f3(c.aw),f3(c.auh),f3(c.adh),f3(c.ah),f3(c.vAbove),f3(c.vBelow),f3(c.vTotal)].map(q).join(','); });
+  download(`LBS_measurements_${today()}.csv`, '\ufeff' + [head.map(q).join(','), ...lines].join('\n'), 'text/csv');
+}
+async function exportJSON(){ download(`LBS_backup_${today()}.json`, JSON.stringify(await dbAll()), 'application/json'); }
+async function importJSON(e){
+  const f = e.target.files[0]; if (!f) return;
+  try{ const arr = JSON.parse(await f.text()); let n = 0; for (const r of arr){ if (r.uid && r.s1){ await dbPut(r); n++; } } toast(`Restored ${n} structures`); showList(); }
+  catch(err){ toast('That file is not a valid backup: ' + err.message); }
+}
+
+/* ===== Dashboard core: shared by the phone app and the Apps Script web dashboard ===== */
+const Dash = (() => {
+  const e = s => String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const has = v => !(v === '' || v == null || isNaN(+v));
+  const val = v => has(v) ? +v : 0;
+  const fx = (v, d=1) => has(v) ? (+v).toLocaleString('en-IN', { minimumFractionDigits:d, maximumFractionDigits:d }) : '—';
+  const STAGES = ['Site visit done', 'Foundation done', 'Completed'];
+  const COLORS = { 'Draft':'#9AA7A2', 'Site visit done':'#5B8FB0', 'Foundation done':'#7A5737', 'Completed':'#0F6E6A' };
+  const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const css = `
+  .dsh-src{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:.2rem 0 .6rem}
+  .dsh-src button{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer;font-weight:600}
+  .dsh-src button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .dsh-filt{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.8rem}
+  .dsh-filt select{width:100%;min-height:42px;border:1.5px solid var(--line);border-radius:6px;background:#fff;padding:0 .5rem}
+  .dsh-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem}
+  .dsh-k{background:#fff;border:1px solid var(--line);border-radius:6px;padding:.6rem .7rem}
+  .dsh-k b{display:block;font-size:1.45rem;line-height:1.15}
+  .dsh-k small{color:var(--muted);font-size:.8rem}
+  .dsh-k.lead{background:var(--staff-2);border-color:#E7D29A;border-left:5px solid var(--staff)}
+  .dsh-sec{background:#fff;border:1px solid var(--line);border-radius:8px;padding:.8rem .9rem;margin-bottom:1rem}
+  .dsh-sec h3{margin:0 0 .6rem;font-size:1rem}
+  .hb{display:grid;grid-template-columns:minmax(80px,32%) 1fr auto;gap:.5rem;align-items:center;margin:.35rem 0;font-size:.9rem}
+  .hb-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hb-t{background:var(--paper);border-radius:3px;height:16px;overflow:hidden}
+  .hb-f{height:100%;border-radius:3px}
+  .hb-v{font-weight:650;white-space:nowrap;min-width:4.5em;text-align:right}
+  .dsh-leg{display:flex;gap:1rem;flex-wrap:wrap;font-size:.82rem;color:var(--muted);margin-top:.3rem}
+  .dsh-leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:.3rem;vertical-align:-1px}
+  .dsh-tw{overflow-x:auto}
+  .dsh-t{border-collapse:collapse;width:100%;min-width:480px;font-size:.88rem}
+  .dsh-t th,.dsh-t td{border-bottom:1px solid var(--line);padding:.45rem .4rem;text-align:left}
+  .dsh-t th{font-size:.8rem;color:var(--muted);font-weight:600}
+  .dsh-t td.n{text-align:right}
+  .dsh-t td:first-child{white-space:nowrap}
+  .dsh-t tr.go{cursor:pointer}
+  .dsh-t tr.go:hover td{background:var(--paper)}
+  .dsh-st{display:inline-block;padding:.05rem .45rem;border-radius:4px;color:#fff;font-size:.78rem;white-space:nowrap}
+  .dsh-note{font-size:.82rem;color:var(--muted);margin:.2rem 0 .8rem}
+  @media (max-width:520px){.dsh-kpi{grid-template-columns:1fr 1fr}}`;
+
+  function hbars(items, unit, color){
+    if (!items.length) return '<p class="dsh-note">No data for this selection.</p>';
+    const max = Math.max(1e-9, ...items.map(i => i.v));
+    return items.map(i => `<div class="hb"><div class="hb-l" title="${e(i.k)}">${e(i.k)}</div>
+      <div class="hb-t"><div class="hb-f" style="width:${(i.v/max*100).toFixed(1)}%;background:${i.c||color}"></div></div>
+      <div class="hb-v">${i.label ?? fx(i.v, unit==='Cum'?1:0) + (unit?' '+unit:'')}</div></div>`).join('');
+  }
+
+  // Grouped columns: structures reaching each stage, per month (last 12 months with activity)
+  function monthChart(rows){
+    const keys = new Set(), cnt = {};
+    const add = (d, s) => { if (!d || d.length < 7) return; const k = d.slice(0,7); keys.add(k); cnt[k] = cnt[k] || [0,0,0]; cnt[k][s]++; };
+    rows.forEach(r => { add(r.d1,0); add(r.d2,1); add(r.d3,2); });
+    const ks = [...keys].sort().slice(-12);
+    if (!ks.length) return '<p class="dsh-note">Stage dates will appear here once measurements are recorded.</p>';
+    const W = 380, H = 200, padL = 24, padB = 34, padT = 10;
+    const max = Math.max(1, ...ks.map(k => Math.max(...cnt[k])));
+    const gw = (W - padL) / ks.length, bw = Math.min(16, gw/4);
+    const col = ['#5B8FB0','#7A5737','#0F6E6A'];
+    const y = v => padT + (H - padT - padB) * (1 - v/max);
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:560px;display:block" role="img" aria-label="Monthly stage progress">`;
+    const ticks = Math.min(max, 4);
+    for (let t = 0; t <= ticks; t++){ const v = Math.round(max*t/ticks); svg += `<line x1="${padL}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#E3E8E5"/><text x="${padL-6}" y="${y(v)+4}" font-size="11" text-anchor="end" fill="#5C6B66">${v}</text>`; }
+    ks.forEach((k, i) => {
+      const x0 = padL + gw*i + gw/2 - bw*1.5;
+      cnt[k].forEach((v, s) => { if (v) svg += `<rect x="${x0 + s*bw}" y="${y(v)}" width="${bw-2}" height="${(H-padB)-y(v)}" fill="${col[s]}" rx="2"><title>${k}: ${v}</title></rect>`; });
+      const [yy, mm] = k.split('-');
+      svg += `<text x="${padL + gw*i + gw/2}" y="${H-padB+16}" font-size="11" text-anchor="middle" fill="#5C6B66">${MON[+mm-1]}</text>`;
+      if (i === 0 || mm === '01') svg += `<text x="${padL + gw*i + gw/2}" y="${H-padB+29}" font-size="10" text-anchor="middle" fill="#9AA7A2">${yy}</text>`;
+    });
+    svg += '</svg>';
+    return svg + `<div class="dsh-leg"><span><i style="background:${col[0]}"></i>Site visit</span><span><i style="background:${col[1]}"></i>Foundation</span><span><i style="background:${col[2]}"></i>Completed</span></div>`;
+  }
+
+  /**
+   * rows: [{uid,lbsId,site,village,owner,gat,lat,lng,d1,d2,d3,exc,above,below,total,status,folder,updated,pending?,flags?}]
+   * opts: { onOpen(uid), sourceBar(html), note, mapEl(rows) }
+   */
+  function render(el, allRows, opts = {}){
+    const f = el._dshFilter || { village:'', status:'' };
+    const villages = [...new Set(allRows.map(r => r.village || '(no village)'))].sort();
+    const rows = allRows.filter(r => (!f.village || (r.village || '(no village)') === f.village) && (!f.status || r.status === f.status));
+
+    const N = rows.length;
+    const reach = s => rows.filter(r => STAGES.indexOf(r.status) >= s).length;
+    const done = rows.filter(r => r.status === 'Completed');
+    const drafts = rows.filter(r => r.status === 'Draft').length;
+    const exc = rows.reduce((a,r) => a + val(r.exc), 0);
+    const stone = done.reduce((a,r) => a + val(r.total), 0);
+    const above = done.reduce((a,r) => a + val(r.above), 0);
+    const below = done.reduce((a,r) => a + val(r.below), 0);
+    const pending = rows.filter(r => r.pending).length;
+    const flagged = rows.filter(r => r.flags > 0).length;
+    const hasFlags = rows.some(r => r.flags !== undefined);
+
+    const byV = {};
+    rows.forEach(r => { const k = r.village || '(no village)'; byV[k] = byV[k] || { n:0, done:0, stone:0 }; byV[k].n++; if (r.status==='Completed'){ byV[k].done++; byV[k].stone += val(r.total); } });
+    const vItems = Object.entries(byV).map(([k,o]) => ({ k, v:o.stone, label:`${fx(o.stone)} Cum · ${o.done}/${o.n}` })).sort((a,b) => b.v - a.v);
+
+    el.innerHTML = `
+      ${opts.sourceBar || ''}
+      ${opts.note ? `<p class="dsh-note">${opts.note}</p>` : ''}
+      <div class="dsh-filt">
+        <select data-f="village" aria-label="Filter by village"><option value="">All villages</option>${villages.map(v => `<option ${f.village===v?'selected':''}>${e(v)}</option>`).join('')}</select>
+        <select data-f="status" aria-label="Filter by status"><option value="">All stages</option>${['Draft',...STAGES].map(s => `<option ${f.status===s?'selected':''}>${s}</option>`).join('')}</select>
+      </div>
+      <div class="dsh-kpi">
+        <div class="dsh-k lead"><b>${fx(stone)}</b><small>Cum stone work in completed LBS</small></div>
+        <div class="dsh-k"><b>${N}</b><small>Structures${drafts?` (${drafts} draft)`:''}</small></div>
+        <div class="dsh-k"><b>${done.length}</b><small>Completed${N?` · ${Math.round(done.length/N*100)}%`:''}</small></div>
+        <div class="dsh-k"><b>${fx(exc)}</b><small>Cum foundation excavation</small></div>
+        <div class="dsh-k"><b>${done.length ? fx(stone/done.length, 2) : '—'}</b><small>Cum average per completed LBS</small></div>
+        ${hasFlags ? `<div class="dsh-k"><b>${pending}</b><small>Waiting to sync${flagged?` · ${flagged} to check`:''}</small></div>`
+                   : `<div class="dsh-k"><b>${fx(above)} / ${fx(below)}</b><small>Cum above / below nala bed</small></div>`}
+      </div>
+
+      <section class="dsh-sec"><h3>Stage progress</h3>
+        ${hbars(STAGES.map((s,i) => ({ k:s, v:reach(i), c:COLORS[s], label:`${reach(i)} of ${N}` })), '')}
+      </section>
+
+      ${opts.mapEl ? `<section class="dsh-sec"><h3>Structure locations</h3><div id="dshMap" style="height:340px;border-radius:6px"></div></section>` : ''}
+
+      <section class="dsh-sec"><h3>Monthly progress</h3>${monthChart(rows)}</section>
+
+      <section class="dsh-sec"><h3>Stone work by village</h3>
+        ${hbars(vItems, 'Cum', '#0F6E6A')}
+        <p class="dsh-note">Completed structures only. Count shows completed / total in the village.</p>
+      </section>
+
+      <section class="dsh-sec"><h3>Structures</h3>
+        <div class="dsh-tw"><table class="dsh-t"><thead><tr><th>LBS ID</th><th>Village</th><th>Landowner</th><th>Stage</th><th class="n">Excavation (Cum)</th><th class="n">Stone work (Cum)</th>${opts.onOpen?'':'<th>Links</th>'}</tr></thead><tbody>
+        ${rows.map(r => `<tr class="${opts.onOpen?'go':''}" data-uid="${e(r.uid)}">
+          <td><b>${e(r.lbsId || 'Untitled')}</b>${r.pending?' <small title="Not synced">●</small>':''}${r.flags?` <small title="Readings to check" style="color:#A6461F">⚠</small>`:''}</td>
+          <td>${e(r.village)}</td><td>${e(r.owner)}${r.gat?` <small>(Gat ${e(r.gat)})</small>`:''}</td>
+          <td><span class="dsh-st" style="background:${COLORS[r.status]||'#9AA7A2'}">${e(r.status)}</span></td>
+          <td class="n">${fx(r.exc, 3)}</td><td class="n">${fx(r.total, 3)}</td>
+          ${opts.onOpen?'':`<td>${has(r.lat)&&has(r.lng)?`<a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank" rel="noopener">Map</a>`:''} ${r.folder?`<a href="${e(r.folder)}" target="_blank" rel="noopener">Photos</a>`:''}</td>`}
+        </tr>`).join('') || `<tr><td colspan="7" class="dsh-note">No structures match this filter.</td></tr>`}
+        </tbody></table></div>
+      </section>`;
+
+    el.querySelectorAll('select[data-f]').forEach(s => s.onchange = () => { f[s.dataset.f] = s.value; el._dshFilter = f; render(el, allRows, opts); });
+    if (opts.onOpen) el.querySelectorAll('tr.go').forEach(tr => tr.onclick = () => opts.onOpen(tr.dataset.uid));
+    if (opts.afterRender) opts.afterRender(el);
+    if (opts.mapEl) opts.mapEl(rows);
+  }
+
+  return { render, css, COLORS };
+})();
+/* ===== end dashboard core ===== */
+
+/* =========================================================
+   Dashboard view
+   ========================================================= */
+let dashSource = localStorage.getItem('swc-dash-src') || 'phone';
+
+function toRow(r){
+  const c = calc(r);
+  const d1 = stageDone(r,'s1'), d2 = stageDone(r,'s2'), d3 = stageDone(r,'s3');
+  const flags = ['s1','s2','s3'].reduce((a,s) => a + warnings(r, c, s).filter(w => !/incomplete|longer than 20/.test(w)).length, 0);
+  return {
+    uid:r.uid, lbsId:r.s1.lbsId, site:r.s1.siteName, village:r.s1.village, owner:r.s1.owner, gat:r.s1.gatNo,
+    lat:r.s1.lat, lng:r.s1.lng, d1: d1 ? r.s1.date : '', d2: d2 ? r.s2.date : '', d3: d3 ? r.s3.date : '',
+    exc: d2 ? c.vFound : null, above: d3 ? c.vAbove : null, below: d3 ? c.vBelow : null, total: d3 ? c.vTotal : null,
+    status: d3 ? 'Completed' : d2 ? 'Foundation done' : d1 ? 'Site visit done' : 'Draft',
+    folder: r.links.folder, updated: r.updated, pending: Object.values(r.sync).includes('pending'), flags
+  };
+}
+
+async function showDashboard(){
+  view = 'dash'; cur = null;
+  $('#title').textContent = 'Dashboard'; $('#backBtn').hidden = false;
+  $('#app').innerHTML = '<div id="dsh"></div>';
+  const el = $('#dsh');
+  const bar = `<div class="dsh-src" role="tablist">
+      <button data-src="phone" class="${dashSource==='phone'?'on':''}">This phone</button>
+      <button data-src="sheet" class="${dashSource==='sheet'?'on':''}">All teams (Sheet)</button></div>`;
+  const hook = root => root.querySelectorAll('[data-src]').forEach(b => b.onclick = () => {
+    dashSource = b.dataset.src; localStorage.setItem('swc-dash-src', dashSource); el._dshFilter = null; showDashboard(); });
+
+  if (dashSource === 'phone'){
+    const rows = (await dbAll()).map(toRow).sort((a,b) => (b.updated||'').localeCompare(a.updated||''));
+    Dash.render(el, rows, { sourceBar: bar, afterRender: hook,
+      note: 'Structures recorded on this phone, including unsynced work.',
+      onOpen: async uid => { const r = (await dbAll()).find(x => x.uid === uid); if (r) openRecord(r, 'sum'); } });
+    return;
+  }
+
+  // All teams: live from the Google Sheet when online, last downloaded copy when offline
+  const cached = JSON.parse(localStorage.getItem('swc-dash-cache') || 'null');
+  const draw = (data, note) => Dash.render(el, data.rows, { sourceBar: bar, afterRender: hook, note });
+  if (cached) draw(cached, `Last downloaded ${new Date(cached.at).toLocaleString('en-IN')}.${navigator.onLine ? ' Refreshing…' : ' You are offline.'}`);
+  else el.innerHTML = bar + '<p class="dsh-note">Loading from Google Sheet…</p>';
+  hook(el);
+  if (!settings.url){ el.insertAdjacentHTML('beforeend','<div class="warn">Add the Apps Script web app URL in Settings to see all teams\' data.</div>'); return; }
+  if (!navigator.onLine){ if (!cached) el.insertAdjacentHTML('beforeend','<div class="warn">You are offline and no copy has been downloaded yet. Connect once to load the dashboard.</div>'); return; }
+  try{
+    const j = await post({ action:'dashboard' });
+    const data = { rows: j.rows, at: Date.now() };
+    localStorage.setItem('swc-dash-cache', JSON.stringify(data));
+    if (view === 'dash' && dashSource === 'sheet') draw(data, `${j.rows.length} structures from all synced phones. Updated just now.`);
+  }catch(err){
+    if (view === 'dash') el.insertAdjacentHTML('afterbegin', `<div class="warn">Could not refresh: ${esc(err.message)}</div>`);
+  }
+}
+(() => { const s = document.createElement('style'); s.textContent = Dash.css; document.head.appendChild(s); })();
+
+/* =========================================================
+   Boot
+   ========================================================= */
+function netState(){ const on = navigator.onLine; const n=$('#net'); n.textContent = on?'Online':'Offline'; n.classList.toggle('off', !on); }
+window.addEventListener('online', () => { netState(); if (settings.autoSync && settings.url) syncAll(); });
+window.addEventListener('offline', netState);
+$('#backBtn').onclick = async () => { clearTimeout(saveTimer); if (cur) await dbPut(cur); showList(); };
+$('#setBtn').onclick = showSettings;
+$('#dashBtn').onclick = showDashboard;
+$('#syncBtn').onclick = () => syncAll();
+netState();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+showList();
+</script>
+</body>
+</html>
